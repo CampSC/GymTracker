@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#F5F5F5">
+
+    <LinearLayout
+        android:id="@+id/llPlansContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <!-- Cabeçalho -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="GymLog"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#212121" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Acompanha a tua evolução."
+        android:textSize="16sp"
+        android:textColor="#757575" />
+
+    <!-- Título da secção -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="Os meus planos"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#212121" />
+
+    <!-- Estado vazio -->
+    <TextView
+        android:id="@+id/tvEmptyPlans"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:padding="24dp"
+        android:text="Ainda não tens planos de treino.\nCria o teu primeiro plano!"
+        android:textSize="16sp"
+        android:textColor="#757575"
+        android:background="#FFFFFF" />
+
+    <!-- Botão para criar plano -->
+    <Button
+        android:id="@+id/btnCreatePlan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Criar plano" />
+
+    <Button
+        android:id="@+id/btnSeePlans"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Ver Planos" />
+
+</LinearLayout>
