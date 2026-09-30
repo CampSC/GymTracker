@@ -15,6 +15,9 @@
             android:name=".PlanDetailActivity"
             android:exported="false" />
         <activity
+            android:name=".ExerciseLibraryActivity"
+            android:exported="false" />
+        <activity
             android:name=".DayDetailActivity"
             android:exported="false" />
         <activity

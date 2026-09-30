@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "exercises": [
+    {
+      "name": "Incline Bench Press Haltere",
+      "muscleGroup": "Peito",
+      "equipment": "Halteres"
+    },
+    {
+      "name": "Chest Press Máquina Smith",
+      "muscleGroup": "Peito",
+      "equipment": "Smith"
+    },
+    {
+      "name": "Abertura Polia",
+      "muscleGroup": "Peito",
+      "equipment": "Cabo"
+    },
+    {
+      "name": "Abertura Máquina",
+      "muscleGroup": "Peito",
+      "equipment": "Máquina"
+    },
+    {
+      "name": "Shoulder Press Haltere/Smith",
+      "muscleGroup": "Ombros",
+      "equipment": "Halteres/Smith"
+    },
+    {
+      "name": "Lateral Raises Banco",
+      "muscleGroup": "Ombros",
+      "equipment": "Halteres"
+    },
+    {
+      "name": "Lateral Raises Haltere",
+      "muscleGroup": "Ombros",
+      "equipment": "Halteres"
+    },
+    {
+      "name": "Dips",
+      "muscleGroup": "Tríceps",
+      "equipment": "Peso corporal"
+    },
+    {
+      "name": "Tricep Overhead Banco Declinado",
+      "muscleGroup": "Tríceps",
+      "equipment": "Halteres"
+    },
+    {
+      "name": "Tricep Pushdown",
+      "muscleGroup": "Tríceps",
+      "equipment": "Cabo"
+    },
+    {
+      "name": "Pull-up",
+      "muscleGroup": "Costas",
+      "equipment": "Peso corporal"
+    },
+    {
+      "name": "Row Close Grip",
+      "muscleGroup": "Costas",
+      "equipment": "Máquina"
+    },
+    {
+      "name": "Seat Row Cable Wide",
+      "muscleGroup": "Costas",
+      "equipment": "Cabo"
+    },
+    {
+      "name": "Shrugs Smith",
+      "muscleGroup": "Trapézio",
+      "equipment": "Smith"
+    },
+    {
+      "name": "Rear Delt Cable",
+      "muscleGroup": "Ombros",
+      "equipment": "Cabo"
+    },
+    {
+      "name": "Bicep Curl Cable",
+      "muscleGroup": "Bíceps",
+      "equipment": "Cabo"
+    },
+    {
+      "name": "Bicep Curl Haltere",
+      "muscleGroup": "Bíceps",
+      "equipment": "Halteres"
+    },
+    {
+      "name": "Rope Hammer Curl",
+      "muscleGroup": "Bíceps",
+      "equipment": "Cabo"
+    },
+    {
+      "name": "Lombar",
+      "muscleGroup": "Lombar",
+      "equipment": "Peso corporal/halteres"
+    },
+    {
+      "name": "Cable Crunch",
+      "muscleGroup": "Abdominais",
+      "equipment": "Cabo"
+    },
+    {
+      "name": "Leg Raises",
+      "muscleGroup": "Abdominais",
+      "equipment": "Peso corporal"
+    },
+    {
+      "name": "Deadlift Romanian",
+      "muscleGroup": "Posterior de coxa",
+      "equipment": "Barra"
+    },
+    {
+      "name": "Hip Thrust",
+      "muscleGroup": "Glúteos",
+      "equipment": "Barra"
+    },
+    {
+      "name": "Hamstring Curl Seated",
+      "muscleGroup": "Posterior de coxa",
+      "equipment": "Máquina"
+    },
+    {
+      "name": "Calf Raises Leg Press",
+      "muscleGroup": "Gémeos",
+      "equipment": "Leg press"
+    }
+  ]
+}

@@ -2,21 +2,20 @@ package com.sergio.gymtracker;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
-import android.os.Bundle;
-import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
-import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.ArrayList;
+import com.sergio.gymtracker.repository.GymRepository;
 
+import java.util.ArrayList;
+import java.util.List;
 
 public class CreatePlanActivity extends AppCompatActivity {
 
@@ -24,8 +23,23 @@ public class CreatePlanActivity extends AppCompatActivity {
     private LinearLayout llDaysContainer;
     private Button btnSavePlan;
 
-    private ArrayList<EditText> dayNameInputs = new ArrayList<>();
-    private ArrayList<Spinner> dayTypeInputs = new ArrayList<>();
+    private final List<EditText> dayNameInputs =
+            new ArrayList<>();
+
+    private final List<Spinner> dayTypeInputs =
+            new ArrayList<>();
+
+    private GymRepository repository;
+
+    private static final String[] DAYS = {
+            "Segunda-feira",
+            "Terça-feira",
+            "Quarta-feira",
+            "Quinta-feira",
+            "Sexta-feira",
+            "Sábado",
+            "Domingo"
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +50,8 @@ public class CreatePlanActivity extends AppCompatActivity {
         llDaysContainer = findViewById(R.id.llDaysContainer);
         btnSavePlan = findViewById(R.id.btnSavePlan);
 
+        repository = new GymRepository(getApplicationContext());
+
         createDayFields();
 
         btnSavePlan.setOnClickListener(v -> savePlan());
@@ -43,29 +59,32 @@ public class CreatePlanActivity extends AppCompatActivity {
 
     private void createDayFields() {
 
-        String[] dayTypes = {"Treino", "Descanso"};
+        String[] dayTypes = {
+                "Treino",
+                "Descanso"
+        };
 
-        for (int i = 1; i <= 7; i++) {
+        for (int i = 0; i < 7; i++) {
 
-            // Criar o título do dia
             TextView dayTitle = new TextView(this);
-            dayTitle.setText("Dia " + i);
+
+            dayTitle.setText(DAYS[i]);
             dayTitle.setTextSize(18);
             dayTitle.setPadding(0, 16, 0, 8);
 
-            // Criar campo para o nome
             EditText dayName = new EditText(this);
-            dayName.setHint("Nome do dia (ex: Push)");
+
+            dayName.setHint("Nome do treino (ex.: Push)");
             dayName.setSingleLine(true);
 
-            // Criar seleção do tipo de dia
             Spinner dayType = new Spinner(this);
 
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                    this,
-                    android.R.layout.simple_spinner_item,
-                    dayTypes
-            );
+            ArrayAdapter<String> adapter =
+                    new ArrayAdapter<>(
+                            this,
+                            android.R.layout.simple_spinner_item,
+                            dayTypes
+                    );
 
             adapter.setDropDownViewResource(
                     android.R.layout.simple_spinner_dropdown_item
@@ -73,12 +92,10 @@ public class CreatePlanActivity extends AppCompatActivity {
 
             dayType.setAdapter(adapter);
 
-            // Adicionar elementos ao formulário
             llDaysContainer.addView(dayTitle);
             llDaysContainer.addView(dayName);
             llDaysContainer.addView(dayType);
 
-            // Guardar referências aos campos
             dayNameInputs.add(dayName);
             dayTypeInputs.add(dayType);
         }
@@ -86,50 +103,60 @@ public class CreatePlanActivity extends AppCompatActivity {
 
     private void savePlan() {
 
-        String planName = etPlanName.getText().toString().trim();
+        String planName = etPlanName.getText()
+                .toString()
+                .trim();
 
         if (planName.isEmpty()) {
-            etPlanName.setError("Introduz um nome para o plano");
+            etPlanName.setError(
+                    "Introduz um nome para o plano."
+            );
             return;
         }
 
-        TrainingPlan plan = new TrainingPlan(1, planName);
+        List<String> dayNames = new ArrayList<>();
+        List<Boolean> restDays = new ArrayList<>();
 
         for (int i = 0; i < 7; i++) {
 
-            String dayName = dayNameInputs.get(i)
-                    .getText().toString().trim();
+            String name = dayNameInputs.get(i)
+                    .getText()
+                    .toString()
+                    .trim();
 
-            String dayType = dayTypeInputs.get(i)
-                    .getSelectedItem().toString();
+            boolean isRestDay =
+                    dayTypeInputs.get(i)
+                            .getSelectedItem()
+                            .toString()
+                            .equals("Descanso");
 
-            if (dayName.isEmpty()) {
-                dayName = dayType.equals("Descanso")
+            if (name.isEmpty()) {
+                name = isRestDay
                         ? "Descanso"
                         : "Dia " + (i + 1);
             }
 
-            boolean isRestDay = dayType.equals("Descanso");
-
-            PlanDay day = new PlanDay(
-                    i + 1,
-                    i + 1,
-                    dayName,
-                    isRestDay
-            );
-
-            plan.addDay(day);
+            dayNames.add(name);
+            restDays.add(isRestDay);
         }
 
-        getIntent().putExtra("planName", plan.getName());
+        btnSavePlan.setEnabled(false);
+        btnSavePlan.setText("A guardar...");
 
-        // Devolver o plano à atividade anterior
-        android.content.Intent resultIntent =
-                new android.content.Intent();
+        repository.createPlanWithDays(
+                planName,
+                dayNames,
+                restDays,
+                planId -> runOnUiThread(() -> {
 
-        resultIntent.putExtra("plan", plan);
+                    Intent result = new Intent();
 
-        setResult(RESULT_OK, resultIntent);
-        finish();
+                    result.putExtra("planId", planId);
+                    result.putExtra("planName", planName);
+
+                    setResult(RESULT_OK, result);
+                    finish();
+                })
+        );
     }
 }

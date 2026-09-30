@@ -1,4 +1,3 @@
-
 package com.sergio.gymtracker;
 
 import android.os.Bundle;
@@ -13,6 +12,13 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.sergio.gymtracker.data.ExerciseLibraryEntity;
+import com.sergio.gymtracker.data.PlanExerciseEntity;
+import com.sergio.gymtracker.repository.GymRepository;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class DayDetailActivity extends AppCompatActivity {
 
     private TextView tvDayName;
@@ -20,8 +26,16 @@ public class DayDetailActivity extends AppCompatActivity {
     private LinearLayout llExercisesContainer;
     private Button btnAddExercise;
 
-    private TrainingPlan plan;
-    private PlanDay selectedDay;
+    private long dayId;
+    private String dayName;
+
+    private GymRepository repository;
+
+    private List<PlanExerciseEntity> exercises =
+            new ArrayList<>();
+
+    private List<ExerciseLibraryEntity> libraryExercises =
+            new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,253 +44,393 @@ public class DayDetailActivity extends AppCompatActivity {
 
         tvDayName = findViewById(R.id.tvDayName);
         tvExerciseCount = findViewById(R.id.tvExerciseCount);
-        llExercisesContainer = findViewById(R.id.llExercisesContainer);
+        llExercisesContainer =
+                findViewById(R.id.llExercisesContainer);
         btnAddExercise = findViewById(R.id.btnAddExercise);
 
-        plan = (TrainingPlan) getIntent()
-                .getSerializableExtra("plan");
+        dayId = getIntent().getLongExtra("dayId", -1);
+        dayName = getIntent().getStringExtra("dayName");
 
-        int dayId = getIntent().getIntExtra("dayId", -1);
-
-        if (plan == null) {
+        if (dayId == -1 || dayName == null) {
             finish();
             return;
         }
 
-        for (PlanDay day : plan.getDays()) {
+        tvDayName.setText(dayName);
 
-            if (day.getId() == dayId) {
-                selectedDay = day;
-                break;
-            }
-        }
+        repository = new GymRepository(getApplicationContext());
 
-        if (selectedDay == null) {
-            finish();
-            return;
-        }
+        repository.observeExercises(dayId).observe(this, exerciseList -> {
+            exercises = exerciseList;
+            displayExercises();
+        });
 
-        tvDayName.setText(selectedDay.getName());
-
-        btnAddExercise.setOnClickListener(v -> showAddExerciseDialog());
-
-        displayExercises();
+        btnAddExercise.setOnClickListener(
+                v -> loadLibraryAndSelectExercise()
+        );
     }
+
+    // =====================================================
+    // LISTA DE EXERCÍCIOS DO DIA
+    // =====================================================
 
     private void displayExercises() {
 
         llExercisesContainer.removeAllViews();
 
-        int exerciseCount = selectedDay.getExercises().size();
+        int count = exercises == null ? 0 : exercises.size();
 
         tvExerciseCount.setText(
-                exerciseCount + (exerciseCount == 1
+                count + (count == 1
                         ? " exercício"
                         : " exercícios")
         );
 
-        if (exerciseCount == 0) {
+        if (count == 0) {
 
-            TextView emptyMessage = new TextView(this);
-
-            emptyMessage.setText(
+            TextView empty = new TextView(this);
+            empty.setText(
                     "Ainda não adicionaste exercícios a este dia."
             );
+            empty.setTextSize(16);
+            empty.setPadding(16, 24, 16, 24);
 
-            emptyMessage.setTextSize(16);
-            emptyMessage.setPadding(16, 24, 16, 24);
-
-            llExercisesContainer.addView(emptyMessage);
+            llExercisesContainer.addView(empty);
+            return;
         }
 
-        for (PlanExercise exercise : selectedDay.getExercises()) {
+        for (int i = 0; i < exercises.size(); i++) {
 
-            LinearLayout exerciseCard = new LinearLayout(this);
+            PlanExerciseEntity exercise = exercises.get(i);
 
-            exerciseCard.setOrientation(LinearLayout.VERTICAL);
-            exerciseCard.setPadding(24, 24, 24, 24);
-            exerciseCard.setBackgroundColor(0xFFFFFFFF);
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setPadding(24, 24, 24, 24);
+            card.setBackgroundColor(0xFFFFFFFF);
 
-            LinearLayout.LayoutParams cardParams =
+            LinearLayout.LayoutParams params =
                     new LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
                             LinearLayout.LayoutParams.WRAP_CONTENT
                     );
 
-            cardParams.setMargins(0, 0, 0, 16);
+            params.setMargins(0, 0, 0, 16);
+            card.setLayoutParams(params);
 
-            exerciseCard.setLayoutParams(cardParams);
+            TextView name = new TextView(this);
+            name.setText(exercise.name);
+            name.setTextSize(18);
+            name.setTextColor(0xFF212121);
 
-            TextView nameView = new TextView(this);
+            TextView details = new TextView(this);
+            details.setText(
+                    exercise.sets + " séries × "
+                            + exercise.reps + " repetições\n"
+                            + exercise.weight + " kg"
+                            + (exercise.notes == null
+                            || exercise.notes.isEmpty()
+                            ? ""
+                            : "\n" + exercise.notes)
+            );
+            details.setTextSize(15);
+            details.setTextColor(0xFF757575);
 
-            nameView.setText(exercise.getName());
-            nameView.setTextSize(18);
-            nameView.setTextColor(0xFF212121);
 
-            TextView detailsView = new TextView(this);
+            // Linha com os controlos de ordenação
+            LinearLayout reorderControls = new LinearLayout(this);
+            reorderControls.setOrientation(LinearLayout.HORIZONTAL);
 
-            detailsView.setText(
-                    exercise.getSets() + " séries × "
-                            + exercise.getReps() + " repetições\n"
-                            + exercise.getWeight() + " kg"
+            // Botão para subir
+            Button btnUp = new Button(this);
+            btnUp.setText("↑ Subir");
+
+            // Botão para descer
+            Button btnDown = new Button(this);
+            btnDown.setText("↓ Descer");
+
+            // Desativar os botões nos limites da lista
+            btnUp.setEnabled(i > 0);
+            btnDown.setEnabled(i < exercises.size() - 1);
+
+            // Mover o exercício uma posição para cima
+            btnUp.setOnClickListener(v ->
+                    repository.moveExercise(
+                            dayId,
+                            exercise.id,
+                            -1
+                    )
             );
 
-            detailsView.setTextSize(15);
-            detailsView.setTextColor(0xFF757575);
+            // Mover o exercício uma posição para baixo
+            btnDown.setOnClickListener(v ->
+                    repository.moveExercise(
+                            dayId,
+                            exercise.id,
+                            1
+                    )
+            );
 
-            Button removeButton = new Button(this);
+            // Adicionar os botões à linha
+            reorderControls.addView(btnUp);
+            reorderControls.addView(btnDown);
 
-            removeButton.setText("Remover");
+            Button edit = new Button(this);
+            edit.setText("Editar");
 
-            removeButton.setOnClickListener(v -> {
+            edit.setOnClickListener(v ->
+                    showExerciseConfiguration(exercise.name, exercise)
+            );
 
-                new AlertDialog.Builder(this)
-                        .setTitle("Remover exercício")
-                        .setMessage(
-                                "Queres remover " + exercise.getName() + "?"
-                        )
-                        .setPositiveButton("Remover", (dialog, which) -> {
+            Button remove = new Button(this);
+            remove.setText("Remover");
 
-                            selectedDay.removeExercise(exercise);
+            remove.setOnClickListener(v ->
+                    new AlertDialog.Builder(this)
+                            .setTitle("Remover exercício")
+                            .setMessage(
+                                    "Queres remover " + exercise.name + "?"
+                            )
+                            .setPositiveButton(
+                                    "Remover",
+                                    (dialog, which) ->
+                                            repository.removeExercise(exercise.id)
+                            )
+                            .setNegativeButton("Cancelar", null)
+                            .show()
+            );
 
-                            displayExercises();
+            card.addView(name);
+            card.addView(details);
+            card.addView(reorderControls);
+            card.addView(edit);
+            card.addView(remove);
 
-                        })
-                        .setNegativeButton("Cancelar", null)
-                        .show();
-            });
-
-            exerciseCard.addView(nameView);
-            exerciseCard.addView(detailsView);
-            exerciseCard.addView(removeButton);
-
-            llExercisesContainer.addView(exerciseCard);
+            llExercisesContainer.addView(card);
         }
     }
 
-    private void showAddExerciseDialog() {
+    // =====================================================
+    // SELEÇÃO NA BIBLIOTECA
+    // =====================================================
 
+    private void loadLibraryAndSelectExercise() {
+
+        repository.getLibraryExercises(result ->
+                runOnUiThread(() -> {
+
+                    libraryExercises = result;
+
+                    if (libraryExercises.isEmpty()) {
+
+                        Toast.makeText(
+                                this,
+                                "A biblioteca está vazia.",
+                                Toast.LENGTH_SHORT
+                        ).show();
+
+                        return;
+                    }
+
+                    showExercisePicker();
+                })
+        );
+    }
+
+    private void showExercisePicker() {
+
+        String[] names = new String[libraryExercises.size()];
+
+        for (int i = 0; i < libraryExercises.size(); i++) {
+
+            ExerciseLibraryEntity exercise =
+                    libraryExercises.get(i);
+
+            names[i] = exercise.name
+                    + " • "
+                    + exercise.muscleGroup;
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Selecionar exercício")
+                .setItems(names, (dialog, which) -> {
+
+                    ExerciseLibraryEntity selected =
+                            libraryExercises.get(which);
+
+                    showExerciseConfiguration(selected.name, null);
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    // =====================================================
+    // CONFIGURAR EXERCÍCIO
+    // =====================================================
+
+    private void showExerciseConfiguration(String exerciseName, PlanExerciseEntity existingExercise) {
+
+        // Se existingExercise não for null, estamos a editar.
+        // Caso contrário, estamos a adicionar um exercício novo.
+        boolean isEditing = existingExercise != null;
+
+        // Criar o formulário
         LinearLayout form = new LinearLayout(this);
-
         form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(48, 16, 48, 0);
 
-        EditText nameInput = new EditText(this);
-        nameInput.setHint("Nome do exercício");
-        nameInput.setSingleLine(true);
-
+        // Campo das séries
         EditText setsInput = new EditText(this);
         setsInput.setHint("Número de séries");
         setsInput.setInputType(InputType.TYPE_CLASS_NUMBER);
 
+        // Campo das repetições
         EditText repsInput = new EditText(this);
         repsInput.setHint("Número de repetições");
         repsInput.setInputType(InputType.TYPE_CLASS_NUMBER);
 
+        // Campo do peso
         EditText weightInput = new EditText(this);
-        weightInput.setHint("Peso inicial (kg)");
+        weightInput.setHint("Peso de referência (kg)");
         weightInput.setInputType(
                 InputType.TYPE_CLASS_NUMBER
                         | InputType.TYPE_NUMBER_FLAG_DECIMAL
         );
 
+        // Campo das notas
         EditText notesInput = new EditText(this);
         notesInput.setHint("Notas (opcional)");
 
-        form.addView(nameInput);
+        // Se estamos a editar, preencher os campos
+        // com os dados que já estão guardados.
+        if (isEditing) {
+
+            setsInput.setText(
+                    String.valueOf(existingExercise.sets)
+            );
+
+            repsInput.setText(
+                    String.valueOf(existingExercise.reps)
+            );
+
+            weightInput.setText(
+                    String.valueOf(existingExercise.weight)
+            );
+
+            if (existingExercise.notes != null) {
+                notesInput.setText(existingExercise.notes);
+            }
+        }
+
+        // Adicionar os campos ao formulário
         form.addView(setsInput);
         form.addView(repsInput);
         form.addView(weightInput);
         form.addView(notesInput);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Adicionar exercício")
-                .setView(form)
-                .setPositiveButton("Guardar", null)
-                .setNegativeButton("Cancelar", null)
-                .create();
+        // O texto do botão depende da operação
+        String buttonText = isEditing
+                ? "Guardar alterações"
+                : "Adicionar";
 
-        dialog.setOnShowListener(d -> {
+        // Criar a janela
+        AlertDialog dialog =
+                new AlertDialog.Builder(this)
+                        .setTitle(exerciseName)
+                        .setView(form)
+                        .setPositiveButton(buttonText, null)
+                        .setNegativeButton("Cancelar", null)
+                        .create();
 
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                    .setOnClickListener(v -> {
+        // Configurar o botão de confirmação
+        dialog.setOnShowListener(d ->
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                        .setOnClickListener(v -> {
 
-                        String name = nameInput.getText()
-                                .toString().trim();
+                            String setsText =
+                                    setsInput.getText().toString().trim();
 
-                        String setsText = setsInput.getText()
-                                .toString().trim();
+                            String repsText =
+                                    repsInput.getText().toString().trim();
 
-                        String repsText = repsInput.getText()
-                                .toString().trim();
+                            String weightText =
+                                    weightInput.getText().toString().trim();
 
-                        String weightText = weightInput.getText()
-                                .toString().trim();
+                            String notes =
+                                    notesInput.getText().toString().trim();
 
-                        String notes = notesInput.getText()
-                                .toString().trim();
-
-                        if (name.isEmpty()
-                                || setsText.isEmpty()
-                                || repsText.isEmpty()
-                                || weightText.isEmpty()) {
-
-                            Toast.makeText(
-                                    this,
-                                    "Preenche todos os campos obrigatórios.",
-                                    Toast.LENGTH_SHORT
-                            ).show();
-
-                            return;
-                        }
-
-                        try {
-
-                            int sets = Integer.parseInt(setsText);
-                            int reps = Integer.parseInt(repsText);
-                            double weight = Double.parseDouble(
-                                    weightText.replace(',', '.')
-                            );
-
-                            if (sets <= 0 || reps <= 0 || weight < 0) {
+                            // Validar campos obrigatórios
+                            if (setsText.isEmpty()
+                                    || repsText.isEmpty()
+                                    || weightText.isEmpty()) {
 
                                 Toast.makeText(
                                         this,
-                                        "Introduz valores válidos.",
+                                        "Preenche séries, repetições e peso.",
                                         Toast.LENGTH_SHORT
                                 ).show();
 
                                 return;
                             }
 
-                            int exerciseId =
-                                    selectedDay.getExercises().size() + 1;
+                            try {
 
-                            PlanExercise exercise = new PlanExercise(
-                                    exerciseId,
-                                    name,
-                                    sets,
-                                    reps,
-                                    weight,
-                                    notes
-                            );
+                                int sets = Integer.parseInt(setsText);
+                                int reps = Integer.parseInt(repsText);
 
-                            selectedDay.addExercise(exercise);
+                                double weight = Double.parseDouble(
+                                        weightText.replace(',', '.')
+                                );
 
-                            displayExercises();
+                                // Validar valores
+                                if (sets <= 0 || reps <= 0 || weight < 0) {
 
-                            dialog.dismiss();
+                                    Toast.makeText(
+                                            this,
+                                            "Introduz valores válidos.",
+                                            Toast.LENGTH_SHORT
+                                    ).show();
 
-                        } catch (NumberFormatException e) {
+                                    return;
+                                }
 
-                            Toast.makeText(
-                                    this,
-                                    "Verifica os valores introduzidos.",
-                                    Toast.LENGTH_SHORT
-                            ).show();
-                        }
-                    });
-        });
+                                if (isEditing) {
+
+                                    // Atualizar o exercício existente
+                                    existingExercise.sets = sets;
+                                    existingExercise.reps = reps;
+                                    existingExercise.weight = weight;
+                                    existingExercise.notes = notes;
+
+                                    repository.updateExercise(
+                                            existingExercise
+                                    );
+
+                                } else {
+
+                                    // Criar um exercício novo
+                                    repository.addExercise(
+                                            dayId,
+                                            exerciseName,
+                                            sets,
+                                            reps,
+                                            weight,
+                                            notes
+                                    );
+                                }
+
+                                // Fechar o formulário
+                                dialog.dismiss();
+
+                            } catch (NumberFormatException e) {
+
+                                Toast.makeText(
+                                        this,
+                                        "Verifica os valores introduzidos.",
+                                        Toast.LENGTH_SHORT
+                                ).show();
+                            }
+                        })
+        );
 
         dialog.show();
     }
